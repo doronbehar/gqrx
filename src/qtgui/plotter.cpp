@@ -1348,9 +1348,9 @@ void CPlotter::draw(bool newData)
                 vmaxIIR = std::max(vmaxIIR, fmin);
                 m_fftMaxBuf[xprev] = vmaxIIR;
 
-                const float vavg = std::max((float)(vsum / count), fmin);
+                const float vavg = std::max((float)(vsum / (double)count), fmin);
                 m_wfAvgBuf[xprev] = vavg;
-                const float vavgIIR = std::max((float)(vsumIIR / count), fmin);
+                const float vavgIIR = std::max((float)(vsumIIR / (double)count), fmin);
                 m_fftAvgBuf[xprev] = vavgIIR;
 
                 // New peak hold value if greater, or reset
