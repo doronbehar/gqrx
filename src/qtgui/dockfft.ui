@@ -109,7 +109,7 @@ QtColorPicker { padding: 0.1em 0.1em 0.1em 0.1em; }</string>
          <number>0</number>
         </property>
         <item>
-         <layout class="QGridLayout" name="gridLayout" rowstretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0">
+         <layout class="QGridLayout" name="gridLayout" rowstretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0">
           <property name="leftMargin">
            <number>0</number>
           </property>
@@ -134,7 +134,7 @@ QtColorPicker { padding: 0.1em 0.1em 0.1em 0.1em; }</string>
              <widget class="QSlider" name="fftAvgSlider">
               <property name="sizePolicy">
                <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
-                <horstretch>1</horstretch>
+                <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
@@ -330,6 +330,9 @@ QtColorPicker { padding: 0.1em 0.1em 0.1em 0.1em; }</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignCenter</set>
+              </property>
+              <property name="margin">
+               <number>4</number>
               </property>
              </widget>
             </item>
@@ -766,7 +769,7 @@ QtColorPicker { padding: 0.1em 0.1em 0.1em 0.1em; }</string>
                <set>Qt::AlignCenter</set>
               </property>
               <property name="margin">
-               <number>0</number>
+               <number>4</number>
               </property>
               <property name="indent">
                <number>0</number>
@@ -1193,6 +1196,9 @@ QtColorPicker { padding: 0.1em 0.1em 0.1em 0.1em; }</string>
               <property name="alignment">
                <set>Qt::AlignCenter</set>
               </property>
+              <property name="margin">
+               <number>4</number>
+              </property>
               <property name="indent">
                <number>0</number>
               </property>
@@ -1343,7 +1349,7 @@ QtColorPicker { padding: 0.1em 0.1em 0.1em 0.1em; }</string>
                <set>Qt::AlignCenter</set>
               </property>
               <property name="margin">
-               <number>0</number>
+               <number>4</number>
               </property>
               <property name="indent">
                <number>0</number>
