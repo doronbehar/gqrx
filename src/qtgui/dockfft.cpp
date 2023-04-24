@@ -70,9 +70,6 @@ DockFft::DockFft(QWidget *parent) :
     QFontMetrics metrics(font);
     QRectF zoomRect = metrics.boundingRect("88888x");
     ui->zoomLevelLabel->setFixedWidth(zoomRect.width());
-
-    QRectF dropLabelRect = metrics.boundingRect("DROP Rate");
-    ui->rateLabel->setFixedWidth(dropLabelRect.width());
 }
 DockFft::~DockFft()
 {
