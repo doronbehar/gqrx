@@ -1697,7 +1697,7 @@ void CPlotter::draw(bool newData)
                     const float d = detectSource[ix];
                     float maxInWindow = std::numeric_limits<float>::lowest();
                     float minInWindow = std::numeric_limits<float>::max();
-                    double sum = d;
+                    float sum = d;
                     for (j = i - pw; j < i; ++j)
                     {
                         const float v = detectSource[j + xmin];
@@ -1705,14 +1705,14 @@ void CPlotter::draw(bool newData)
                         minInWindow = std::min(minInWindow, v);
                         sum += v;
                     }
-                    for (j = i + 1; j < i + pw; ++j)
+                    for (j = i + 1; j <= i + pw; ++j)
                     {
                         const float v = detectSource[j + xmin];
                         maxInWindow = std::max(maxInWindow, v);
                         minInWindow = std::min(minInWindow, v);
                         sum += v;
                     }
-                    m_peakSmoothBuf[ix] = sum / (double)(pw * 2 * 1);
+                    m_peakSmoothBuf[ix] = sum / (float)(pw * 2 + 1);
                     if (d > maxInWindow && d > 2.0 * minInWindow)
                     {
                         const qreal y = std::max(std::min(
@@ -1726,9 +1726,9 @@ void CPlotter::draw(bool newData)
                 // and run detection again on smoothed data, looking for wider
                 // peaks
                 for (i = 0; i < pw; ++i)
-                    m_peakSmoothBuf[i + xmin] = 0; // m_peakSmoothBuf[xmin + pw];
+                    m_peakSmoothBuf[i + xmin] = 0;
                 for (i = npts - pw; i < npts; ++i)
-                    m_peakSmoothBuf[i + xmin] = 0; // m_peakSmoothBuf[xmin + npts - pw - 1];
+                    m_peakSmoothBuf[i + xmin] = 0;
                 for (i = pw; i < npts - pw; ++i)
                 {
                     const int ix = i + xmin;
@@ -1739,7 +1739,7 @@ void CPlotter::draw(bool newData)
                         const float v = m_peakSmoothBuf[j + xmin];
                         maxInWindow = std::max(maxInWindow, v);
                     }
-                    for (j = i + 1; j < i + pw; ++j)
+                    for (j = i + 1; j <= i + pw; ++j)
                     {
                         const float v = m_peakSmoothBuf[j + xmin];
                         maxInWindow = std::max(maxInWindow, v);
@@ -1763,12 +1763,15 @@ void CPlotter::draw(bool newData)
             for(auto peakx : m_Peaks.keys()) {
                 const qreal peakv = m_Peaks.value(peakx);
                 painter2.setPen(peakShadowPen);
-                painter2.drawEllipse(QRectF(
-                    peakx - 5.0 * m_DPR + shadowOffset, peakv - 5.0 * m_DPR + shadowOffset,
-                    10.0 * m_DPR, 10.0 * m_DPR));
+                painter2.drawEllipse(
+                    QRectF((qreal)peakx - 5.0 * m_DPR + shadowOffset,
+                           peakv - 5.0 * m_DPR + shadowOffset,
+                           10.0 * m_DPR, 10.0 * m_DPR));
                 painter2.setPen(peakPen);
-                painter2.drawEllipse(QRectF(peakx - 5.0 * m_DPR, peakv - 5.0 * m_DPR,
-                                           10.0 * m_DPR, 10.0 * m_DPR));
+                painter2.drawEllipse(
+                    QRectF((qreal)peakx - 5.0 * m_DPR,
+                           peakv - 5.0 * m_DPR,
+                           10.0 * m_DPR, 10.0 * m_DPR));
             }
         }
 
