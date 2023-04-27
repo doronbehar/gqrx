@@ -1464,10 +1464,11 @@ void CPlotter::draw(bool newData)
             for (i = 0; i < npts; ++i)
             {
                 const int ix = i + xmin;
+                const qreal ixPlot = (qreal)ix - xScale / 2.0;
                 qint32 cidx = qRound((m_WfMaxdB - 10.0 * log10f(wfSource[ix])) * wfdBGainFactor);
                 cidx = std::max(std::min(cidx, 255), 0);
                 painter1.setPen(m_ColorTbl[255 - cidx]);
-                painter1.drawRect(QRectF(ix, 0.0, 1.0, 1.0));
+                painter1.drawRect(QRectF(ixPlot, 0.0, 1.0, 1.0));
             }
 
             if (msec_per_wfline > 0)
