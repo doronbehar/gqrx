@@ -1563,6 +1563,7 @@ void CPlotter::draw(bool newData)
         for (i = 0; i < npts; i++)
         {
             const int ix = i + xmin;
+            const qreal ixPlot = (qreal)ix - xScale / 2.0;
             const qreal yMaxD = std::max(std::min(
                 panddBGainFactor * (m_PandMaxdB - 10.0 * log10f(m_fftMaxBuf[ix])),
                 plotHeight), 0.0);
@@ -1586,33 +1587,33 @@ void CPlotter::draw(bool newData)
                         const qreal binY = binSizeY * j;
                         topBin = std::min(topBin, binY);
                         const qreal binH = binSizeY * (j + 1) - binY;
-                        painter2.fillRect(QRectF(ix, binY, 1.0, binH), c);
+                        painter2.fillRect(QRectF(ixPlot, binY, 1.0, binH), c);
                     }
                 }
                 // Highlight the top bin, if it isn't too crowded
                 if (topBin != plotHeight && showHistHighlights) {
-                    painter2.fillRect(QRectF(ix, topBin, 1.0, binSizeY), maxLineColor);
+                    painter2.fillRect(QRectF(ixPlot, topBin, 1.0, binSizeY), maxLineColor);
                 }
             }
 
             // Add max, average points if they will be drawn
             if (doMaxLine)
-                maxLineBuf[i] = QPointF(ix + 0.5, yMaxD + 0.5);
+                maxLineBuf[i] = QPointF(ixPlot, yMaxD);
             if (doAvgLine)
-                avgLineBuf[i] = QPointF(ix + 0.5, yAvgD + 0.5);
+                avgLineBuf[i] = QPointF(ixPlot, yAvgD);
 
             // Fill area between markers, even if they are off screen
             qreal yFill = m_PlotMode == PLOT_MODE_MAX ? yMaxD : yAvgD;
             if (fillMarkers && (ix) > minMarker && (ix) < maxMarker) {
-                painter2.fillRect(QRectF(ix, yFill + 1.0, 1.0, plotHeight - yFill), abFillBrush);
+                painter2.fillRect(QRectF(ixPlot, yFill + 1.0, 1.0, plotHeight - yFill), abFillBrush);
             }
             if (m_FftFill && m_PlotMode != PLOT_MODE_HISTOGRAM)
             {
-                painter2.fillRect(QRectF(ix, yFill + 1.0, 1.0, plotHeight - yFill), m_FftFillCol);
+                painter2.fillRect(QRectF(ixPlot, yFill + 1.0, 1.0, plotHeight - yFill), m_FftFillCol);
             }
             if (m_PlotMode == PLOT_MODE_FILLED)
             {
-                painter2.fillRect(QRectF(ix, yMaxD + 1.0, 1.0, yAvgD - yMaxD), maxFillBrush);
+                painter2.fillRect(QRectF(ixPlot, yMaxD + 1.0, 1.0, yAvgD - yMaxD), maxFillBrush);
             }
         }
 
@@ -1634,10 +1635,11 @@ void CPlotter::draw(bool newData)
             for (i = 0; i < npts; i++)
             {
                 const int ix = i + xmin;
+                const qreal ixPlot = (qreal)ix - xScale / 2.0;
                 const qreal yMaxHoldD = std::max(std::min(
                     panddBGainFactor * (m_PandMaxdB - 10.0 * log10f(m_fftMaxHoldBuf[ix])),
                     plotHeight), 0.0);
-                maxLineBuf[i] = QPointF(ix, yMaxHoldD);
+                maxLineBuf[i] = QPointF(ixPlot, yMaxHoldD);
             }
             // NOT scaling to DPR due to performance
             painter2.setPen(m_MaxHoldColor);
@@ -1653,10 +1655,11 @@ void CPlotter::draw(bool newData)
             for (i = 0; i < npts; i++)
             {
                 const int ix = i + xmin;
+                const qreal ixPlot = (qreal)ix - xScale / 2.0;
                 const qreal yMinHoldD = std::max(std::min(
                     panddBGainFactor * (m_PandMaxdB - 10.0 * log10f(m_fftMinHoldBuf[ix])),
                     plotHeight), 0.0);
-                maxLineBuf[i] = QPointF(ix, yMinHoldD);
+                maxLineBuf[i] = QPointF(ixPlot, yMinHoldD);
             }
             // NOT scaling to DPR due to performance
             painter2.setPen(m_MinHoldColor);
@@ -1752,15 +1755,16 @@ void CPlotter::draw(bool newData)
             QPen peakShadowPen(Qt::black, m_DPR);
             peakPen.setWidthF(m_DPR);
             for(auto peakx : m_Peaks.keys()) {
+                const qreal peakxPlot = (qreal)peakx - xScale / 2.0;
                 const qreal peakv = m_Peaks.value(peakx);
                 painter2.setPen(peakShadowPen);
                 painter2.drawEllipse(
-                    QRectF((qreal)peakx - 5.0 * m_DPR + shadowOffset,
+                    QRectF(peakxPlot - 5.0 * m_DPR + shadowOffset,
                            peakv - 5.0 * m_DPR + shadowOffset,
                            10.0 * m_DPR, 10.0 * m_DPR));
                 painter2.setPen(peakPen);
                 painter2.drawEllipse(
-                    QRectF((qreal)peakx - 5.0 * m_DPR,
+                    QRectF(peakxPlot - 5.0 * m_DPR,
                            peakv - 5.0 * m_DPR,
                            10.0 * m_DPR, 10.0 * m_DPR));
             }
