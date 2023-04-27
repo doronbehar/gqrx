@@ -1627,7 +1627,7 @@ void CPlotter::draw(bool newData)
             painter2.drawPolyline(avgLineBuf, npts);
         }
 
-        // Peak hold
+        // Max hold
         if (m_MaxHoldActive)
         {
             // Show max(max) except when showing only avg on screen
@@ -1685,68 +1685,64 @@ void CPlotter::draw(bool newData)
             if (tnow_ms > tlast_peaks_ms + PEAK_UPDATE_PERIOD || m_DrawOverlay) {
                 tlast_peaks_ms = tnow_ms;
                 m_Peaks.clear();
-                // Collect statistics (min/max/avg of window) and find sharper peaks
-                for (i = pw; i < npts - pw; ++i)
-                {
+
+                // Narrow peaks
+                for (i = pw; i < npts - pw; ++i) {
                     const int ix = i + xmin;
-                    const float d = detectSource[ix];
-                    float maxInWindow = std::numeric_limits<float>::lowest();
-                    float minInWindow = std::numeric_limits<float>::max();
-                    float sum = d;
-                    for (j = i - pw; j < i; ++j)
-                    {
-                        const float v = detectSource[j + xmin];
-                        maxInWindow = std::max(maxInWindow, v);
-                        minInWindow = std::min(minInWindow, v);
-                        sum += v;
+                    const float vi = detectSource[ix];
+                    float sumV = 0;
+                    float minV = vi;
+                    float maxV = 0;
+                    for (j = -pw; j <= pw; ++j) {
+                        const float vj = detectSource[ix + j];
+                        minV = std::min(minV, vj);
+                        maxV = std::max(maxV, vj);
+                        sumV += vj;
                     }
-                    for (j = i + 1; j <= i + pw; ++j)
-                    {
-                        const float v = detectSource[j + xmin];
-                        maxInWindow = std::max(maxInWindow, v);
-                        minInWindow = std::min(minInWindow, v);
-                        sum += v;
-                    }
-                    m_peakSmoothBuf[ix] = sum / (float)(pw * 2 + 1);
-                    if (d > maxInWindow && d > 2.0 * minInWindow)
+                    const float avgV = sumV / (float)(pw * 2 + 1);
+                    m_peakSmoothBuf[ix] = avgV;
+                    if (vi == maxV && (vi > 2.0 * avgV) && (vi > 4.0 * minV))
                     {
                         const qreal y = std::max(std::min(
-                            panddBGainFactor * (m_PandMaxdB - 10.0 * log10f(d)),
+                            panddBGainFactor * (m_PandMaxdB - 10.0 * log10f(vi)),
                             plotHeight - 0.0), 0.0);
                         m_Peaks[ix] = y;
                     }
                 }
 
-                // Fill the ends of the d_peakSmoothBuf with valid end values
-                // and run detection again on smoothed data, looking for wider
-                // peaks
-                for (i = 0; i < pw; ++i)
-                    m_peakSmoothBuf[i + xmin] = 0;
-                for (i = npts - pw; i < npts; ++i)
-                    m_peakSmoothBuf[i + xmin] = 0;
-                for (i = pw; i < npts - pw; ++i)
-                {
+                // Use the smoothed curve to find wider peaks
+                const int pw2 = pw * 5;
+                for (i = pw2; i < npts - pw2; ++i) {
                     const int ix = i + xmin;
-                    const float d = m_peakSmoothBuf[ix];
-                    float maxInWindow = std::numeric_limits<float>::lowest();
-                    for (j = i - pw; j < i; ++j)
-                    {
-                        const float v = m_peakSmoothBuf[j + xmin];
-                        maxInWindow = std::max(maxInWindow, v);
+                    const float vi = m_peakSmoothBuf[ix];
+                    float sumV = 0;
+                    float minV = vi;
+                    float maxV = 0;
+                    for (j = -pw2; j <= pw2; ++j) {
+                        const float vj = m_peakSmoothBuf[ix + j];
+                        minV = std::min(minV, vj);
+                        maxV = std::max(maxV, vj);
+                        sumV += vj;
                     }
-                    for (j = i + 1; j <= i + pw; ++j)
-                    {
-                        const float v = m_peakSmoothBuf[j + xmin];
-                        maxInWindow = std::max(maxInWindow, v);
-                    }
-                    if (d > maxInWindow
-                        && d > 1.0 * m_peakSmoothBuf[ix - pw]
-                        && d > 1.0 * m_peakSmoothBuf[ix + pw])
+                    const float avgV = sumV / (float)(pw2 * 2);
+                    if (vi == maxV && (vi > 2.0 * avgV) && (vi > 4.0 * minV))
                     {
                         const qreal y = std::max(std::min(
-                            panddBGainFactor * ((m_PandMaxdB - 10.0 * log10f(detectSource[ix]))),
+                            panddBGainFactor * (m_PandMaxdB - 10.0 * log10f(vi)),
                             plotHeight - 0.0), 0.0);
-                        m_Peaks[ix] = y;
+
+                        // Show the wider peak only if there is no very close narrow peak
+                        bool found = false;
+                        for (j = -pw; j <= pw; ++j) {
+                            auto it = m_Peaks.find(ix + j);
+                            if (it != m_Peaks.end()) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            m_Peaks[ix] = y;
+                        }
                     }
                 }
             }
