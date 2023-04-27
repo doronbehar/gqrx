@@ -363,9 +363,9 @@ void DockFft::readSettings(QSettings *settings)
     intval = settings->value("plot_y_unit", 0).toInt(&conv_ok);
     if (conv_ok) {
         ui->plotScaleBox->setCurrentIndex(intval);
-        // For V (index 0) "per" is N/A
-        ui->plotPerSlashLabel->setVisible(intval != 0);
-        ui->plotPerBox->setVisible(intval != 0);
+        // For dBFS and V (index 0, 1) "per" is N/A
+        ui->plotPerSlashLabel->setVisible(intval == 2);
+        ui->plotPerBox->setVisible(intval == 2);
     }
     intval = settings->value("plot_x_unit", 0).toInt(&conv_ok);
     if (conv_ok)
@@ -589,9 +589,9 @@ void DockFft::on_plotModeBox_currentIndexChanged(int index)
 
 void DockFft::on_plotScaleBox_currentIndexChanged(int index)
 {
-    // For V (index 0) "per" is N/A
-    ui->plotPerSlashLabel->setVisible(index != 0);
-    ui->plotPerBox->setVisible(index != 0);
+    // For dBFS and V (index 0, 1) "per" is N/A
+    ui->plotPerSlashLabel->setVisible(index == 2);
+    ui->plotPerBox->setVisible(index == 2);
     emit plotScaleChanged(index);
 }
 

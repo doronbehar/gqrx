@@ -1841,26 +1841,32 @@ void CPlotter::setNewFftData(const float *fftData, int size)
             zoomStepX(currentZoom / maxZoom, xFromFreq(m_CenterFreq + m_FftCenter));
     }
 
-    // For V, V^2 -> V/RBW. This is really dBFS, using the non-RMS definition
-    // of dBFS. A 1 unit peak sine wave is 0 dBFS.
-    if (m_PlotScale == PLOT_SCALE_DBFS) {
-        for (int i = 0; i < size; ++i)
-            m_fftData[i] = std::max(fftData[i] / (float)size / (float)size, fmin);
+    float _pwr_scale;
+    // For dBFS, using the non-RMS definition of dBFS. A 1 unit peak sine wave
+    // is 0 dBFS.
+    if (m_PlotScale == PLOT_SCALE_DBFS)
+    {
+        _pwr_scale = 1.0 / ((float)size * (float)size);
     }
-    // For dBm, give choose dBm/RBW or dBm/Hz, scaled to 50 ohm. Here, the
-    // scale is interpreted as V. A 1V peak sine corresponds to 10mW, or 10
-    // dBm. The factor of 2 converts Vpeak to Vrms.
+    // For V, convert peak to RMS (/2). 1V peak corresponds to -3.01 dBV (RMS
+    // value is 0.707 * peak).
+    else if (m_PlotScale == PLOT_SCALE_DBV)
+    {
+        _pwr_scale = 1.0 / (2.0 * (float)size * (float)size);
+    }
+    // For dBm, give choose dBm/RBW or dBm/Hz, scaled to 50 ohm. The scale is
+    // interpreted as V. A 1V peak sine corresponds to 10mW, or 10 dBm. The
+    // factor of 2 converts Vpeak to Vrms.
     else
     {
-        float _pwr_scale;
         if (m_PlotPer == PLOT_PER_RBW)
             _pwr_scale = 1000.0 / (2.0 * 50.0 * (float)size * (float)size);
         else
             _pwr_scale = 1000.0 / (2.0 * 50.0 * (float)size * (float)m_SampleFreq);
-        const float pwr_scale = _pwr_scale;
-        for (int i = 0; i < size; ++i)
-            m_fftData[i] = std::max(fftData[i] * pwr_scale, fmin);
     }
+    const float pwr_scale = _pwr_scale;
+    for (int i = 0; i < size; ++i)
+        m_fftData[i] = std::max(fftData[i] * pwr_scale, fmin);
 
     // Update IIR. If IIR is invalid, set alpha to use latest value. Since the
     // IIR is linear data and users would like to see symmetric attack/decay on
