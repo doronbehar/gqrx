@@ -127,7 +127,7 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
     m_CursorCaptureDelta = CUR_CUT_DELTA;
     m_WaterfallMode = WATERFALL_MODE_MAX;
     m_PlotMode = PLOT_MODE_MAX;
-    m_PlotScale = PLOT_SCALE_V;
+    m_PlotScale = PLOT_SCALE_DBFS;
     m_PlotPer = PLOT_PER_RBW;
 
     m_FilterBoxEnabled = true;
@@ -1841,20 +1841,22 @@ void CPlotter::setNewFftData(const float *fftData, int size)
             zoomStepX(currentZoom / maxZoom, xFromFreq(m_CenterFreq + m_FftCenter));
     }
 
-    // For V, V^2 -> V/RBW
-    if (m_PlotScale == PLOT_SCALE_V) {
+    // For V, V^2 -> V/RBW. This is really dBFS, using the non-RMS definition
+    // of dBFS. A 1 unit peak sine wave is 0 dBFS.
+    if (m_PlotScale == PLOT_SCALE_DBFS) {
         for (int i = 0; i < size; ++i)
             m_fftData[i] = std::max(fftData[i] / (float)size / (float)size, fmin);
     }
-    // For DBM, give choose dBm/RBW or dBm/Hz, scaled to 50 ohm.
-    // 1000 V^2 / R
+    // For dBm, give choose dBm/RBW or dBm/Hz, scaled to 50 ohm. Here, the
+    // scale is interpreted as V. A 1V peak sine corresponds to 10mW, or 10
+    // dBm. The factor of 2 converts Vpeak to Vrms.
     else
     {
         float _pwr_scale;
         if (m_PlotPer == PLOT_PER_RBW)
-            _pwr_scale = 1000.0 / (50.0 * (float)size * (float)size);
+            _pwr_scale = 1000.0 / (2.0 * 50.0 * (float)size * (float)size);
         else
-            _pwr_scale = 1000.0 / (50.0 * (float)size * (float)m_SampleFreq);
+            _pwr_scale = 1000.0 / (2.0 * 50.0 * (float)size * (float)m_SampleFreq);
         const float pwr_scale = _pwr_scale;
         for (int i = 0; i < size; ++i)
             m_fftData[i] = std::max(fftData[i] * pwr_scale, fmin);

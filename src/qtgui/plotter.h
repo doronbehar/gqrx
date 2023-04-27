@@ -133,8 +133,8 @@ public:
     };
 
     enum ePlotScale {
-        PLOT_SCALE_V = 0,
-        PLOT_SCALE_DBM50 = 1
+        PLOT_SCALE_DBFS = 0,
+        PLOT_SCALE_DBMW50 = 1
     };
 
     enum ePlotPer {

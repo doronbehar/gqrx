@@ -418,7 +418,7 @@ QtColorPicker { padding: 0.1em 0.1em 0.1em 0.1em; }</string>
               </property>
               <item>
                <property name="text">
-                <string>V</string>
+                <string>dBFS</string>
                </property>
               </item>
               <item>
