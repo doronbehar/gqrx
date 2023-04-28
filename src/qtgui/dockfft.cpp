@@ -34,6 +34,8 @@
 #define DEFAULT_FFT_SIZE        8192
 #define DEFAULT_FFT_ZOOM        1
 #define DEFAULT_FFT_WINDOW      1       // Hann
+#define DEFAULT_PLOT_SCALE      0       // dBFS
+#define DEFAULT_PLOT_PER        0       // RBW
 #define DEFAULT_WATERFALL_SPAN  0       // Auto
 #define DEFAULT_FFT_SPLIT       35
 #define DEFAULT_FFT_AVG         75
@@ -360,16 +362,17 @@ void DockFft::readSettings(QSettings *settings)
     if (conv_ok)
         ui->fftAvgSlider->setValue(intval);
 
-    intval = settings->value("plot_y_unit", 0).toInt(&conv_ok);
-    if (conv_ok) {
-        ui->plotScaleBox->setCurrentIndex(intval);
-        // For dBFS and V (index 0, 1) "per" is N/A
-        ui->plotPerSlashLabel->setVisible(intval == 2);
-        ui->plotPerBox->setVisible(intval == 2);
-    }
-    intval = settings->value("plot_x_unit", 0).toInt(&conv_ok);
-    if (conv_ok)
-        ui->plotPerBox->setCurrentIndex(intval);
+    // Plot scale and denominator
+    int plot_scale = settings->value("plot_y_unit", 0).toInt(&conv_ok);
+    if (!conv_ok)
+        plot_scale = DEFAULT_PLOT_SCALE;
+    ui->plotScaleBox->setCurrentIndex(plot_scale);
+    int plot_per = settings->value("plot_x_unit", 0).toInt(&conv_ok);
+    if (!conv_ok)
+        plot_per = DEFAULT_PLOT_PER;
+    ui->plotPerBox->setCurrentIndex(plot_per);
+    // Trigger additional required logic for plot_scale and plot_per
+    on_plotScaleBox_currentIndexChanged(plot_scale);
 
     intval = settings->value("plot_mode", 0).toInt(&conv_ok);
     if (conv_ok)
@@ -590,14 +593,18 @@ void DockFft::on_plotModeBox_currentIndexChanged(int index)
 void DockFft::on_plotScaleBox_currentIndexChanged(int index)
 {
     // For dBFS and V (index 0, 1) "per" is N/A
-    ui->plotPerSlashLabel->setVisible(index == 2);
-    ui->plotPerBox->setVisible(index == 2);
-    emit plotScaleChanged(index);
+    ui->plotPerSlashLabel->setVisible(index != 0);
+    ui->plotPerBox->setVisible(index != 0);
+    if (index == 1)
+        ui->plotPerBox->setItemText(1, "√Hz");
+    else if (index == 2)
+        ui->plotPerBox->setItemText(1, "Hz");
+    emit plotScaleChanged(index, ui->plotPerBox->currentIndex() == 1);
 }
 
 void DockFft::on_plotPerBox_currentIndexChanged(int index)
 {
-    emit plotPerChanged(index);
+    emit plotScaleChanged(ui->plotScaleBox->currentIndex(), index == 1);
 }
 
 void DockFft::on_plotRangeSlider_valuesChanged(int min, int max)

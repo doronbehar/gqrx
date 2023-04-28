@@ -138,11 +138,6 @@ public:
         PLOT_SCALE_DBMW50 = 2
     };
 
-    enum ePlotPer {
-        PLOT_PER_RBW = 0,
-        PLOT_PER_HZ = 1
-    };
-
     enum eWaterfallMode {
         WATERFALL_MODE_MAX = 0,
         WATERFALL_MODE_AVG = 1
@@ -166,8 +161,7 @@ public slots:
     void moveToDemodFreq();
     void zoomOnXAxis(float level);
     void setPlotMode(int mode);
-    void setPlotScale(int mode);
-    void setPlotPer(int per);
+    void setPlotScale(int mode, bool perHz);
     void setWaterfallMode(int mode);
 
     // other FFT slots
@@ -316,7 +310,7 @@ private:
     qreal       m_FilterClickResolution;
     ePlotMode   m_PlotMode;
     ePlotScale  m_PlotScale;
-    ePlotPer    m_PlotPer;
+    bool        m_PlotPerHz;
     eWaterfallMode m_WaterfallMode;
 
     int         m_Xzero{};

@@ -92,6 +92,8 @@ private:
     float          *d_realFftData;
     float           d_fftAvg;      /*!< FFT averaging parameter set by user (not the true gain). */
     float           d_fps;
+    int             d_fftWindowType;
+    bool            d_fftNormalizeEnergy;
 
     bool d_have_audio;  /*!< Whether we have audio (i.e. not with demod_off. */
 
@@ -202,6 +204,7 @@ private slots:
     void setIqFftSize(int size);
     void setIqFftRate(int fps);
     void setIqFftWindow(int type);
+    void plotScaleChanged(int type, bool perHz);
     void setIqFftSplit(int pct_wf);
     void setAudioFftRate(int fps);
     void setFftColor(const QColor& color);

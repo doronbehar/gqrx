@@ -68,6 +68,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     d_lnb_lo(0),
     d_hw_freq(0),
     d_fftAvg(0.25),
+    d_fftNormalizeEnergy(false),
     d_have_audio(true),
     dec_afsk1200(nullptr)
 {
@@ -275,8 +276,8 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     connect(uiDockFft, SIGNAL(fftZoomChanged(float)), ui->plotter, SLOT(zoomOnXAxis(float)));
     connect(uiDockFft, SIGNAL(waterfallModeChanged(int)), ui->plotter, SLOT(setWaterfallMode(int)));
     connect(uiDockFft, SIGNAL(plotModeChanged(int)), ui->plotter, SLOT(setPlotMode(int)));
-    connect(uiDockFft, SIGNAL(plotScaleChanged(int)), ui->plotter, SLOT(setPlotScale(int)));
-    connect(uiDockFft, SIGNAL(plotPerChanged(int)), ui->plotter, SLOT(setPlotPer(int)));
+    connect(uiDockFft, SIGNAL(plotScaleChanged(int, bool)), ui->plotter, SLOT(setPlotScale(int, bool)));
+    connect(uiDockFft, SIGNAL(plotScaleChanged(int, bool)), this, SLOT(plotScaleChanged(int, bool)));
     connect(uiDockFft, SIGNAL(resetFftZoom()), ui->plotter, SLOT(resetHorizontalZoom()));
     connect(uiDockFft, SIGNAL(gotoFftCenter()), ui->plotter, SLOT(moveToCenterFreq()));
     connect(uiDockFft, SIGNAL(gotoDemodFreq()), ui->plotter, SLOT(moveToDemodFreq()));
@@ -1811,7 +1812,22 @@ void MainWindow::setIqFftRate(int fps)
 
 void MainWindow::setIqFftWindow(int type)
 {
-    rx->set_iq_fft_window(type);
+    d_fftWindowType = type;
+    rx->set_iq_fft_window(d_fftWindowType, d_fftNormalizeEnergy);
+}
+
+void MainWindow::plotScaleChanged(int type, bool perHz)
+{
+    // PLOT_SCALE_DBFS (0) always uses amplitude normalization.
+
+    // PLOT_SCALE_DBV (1) requires energy normalization for /sqrt(Hz) (1), but
+    // not for RBW (0).
+
+    // PLOT_SCALE_DBM (2) requires energy normalization of FFT window whether
+    // or not perHz is specified.
+
+    d_fftNormalizeEnergy = (type == 2) || (type == 1 && perHz);
+    rx->set_iq_fft_window(d_fftWindowType, d_fftNormalizeEnergy);
 }
 
 /** Waterfall time span has changed. */

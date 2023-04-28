@@ -128,7 +128,7 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
     m_WaterfallMode = WATERFALL_MODE_MAX;
     m_PlotMode = PLOT_MODE_MAX;
     m_PlotScale = PLOT_SCALE_DBFS;
-    m_PlotPer = PLOT_PER_RBW;
+    m_PlotPerHz = false;
 
     m_FilterBoxEnabled = true;
     m_CenterLineEnabled = true;
@@ -982,18 +982,10 @@ void CPlotter::setPlotMode(int mode)
     updateOverlay();
 }
 
-void CPlotter::setPlotScale(int scale)
+void CPlotter::setPlotScale(int scale, bool perHz)
 {
     m_PlotScale = (ePlotScale)scale;
-    m_MaxHoldValid = false;
-    m_MinHoldValid = false;
-    m_IIRValid = false;
-    m_histIIRValid = false;
-}
-
-void CPlotter::setPlotPer(int per)
-{
-    m_PlotPer = (ePlotPer)per;
+    m_PlotPerHz = perHz;
     m_MaxHoldValid = false;
     m_MinHoldValid = false;
     m_IIRValid = false;
@@ -1841,29 +1833,25 @@ void CPlotter::setNewFftData(const float *fftData, int size)
             zoomStepX(currentZoom / maxZoom, xFromFreq(m_CenterFreq + m_FftCenter));
     }
 
-    float _pwr_scale;
-    // For dBFS, using the non-RMS definition of dBFS. A 1 unit peak sine wave
+    // For dBFS, define full scale as peak (not RMS). A 1.0 FS peak sine wave
     // is 0 dBFS.
-    if (m_PlotScale == PLOT_SCALE_DBFS)
-    {
-        _pwr_scale = 1.0 / ((float)size * (float)size);
-    }
+    float _pwr_scale = 1.0 / ((float)size * (float)size);
+
     // For V, convert peak to RMS (/2). 1V peak corresponds to -3.01 dBV (RMS
     // value is 0.707 * peak).
-    else if (m_PlotScale == PLOT_SCALE_DBV)
-    {
-        _pwr_scale = 1.0 / (2.0 * (float)size * (float)size);
-    }
-    // For dBm, give choose dBm/RBW or dBm/Hz, scaled to 50 ohm. The scale is
-    // interpreted as V. A 1V peak sine corresponds to 10mW, or 10 dBm. The
-    // factor of 2 converts Vpeak to Vrms.
-    else
-    {
-        if (m_PlotPer == PLOT_PER_RBW)
-            _pwr_scale = 1000.0 / (2.0 * 50.0 * (float)size * (float)size);
-        else
-            _pwr_scale = 1000.0 / (2.0 * 50.0 * (float)size * (float)m_SampleFreq);
-    }
+    if (m_PlotScale == PLOT_SCALE_DBV)
+        _pwr_scale *= 1.0 / 2.0;
+
+    // For dBm, the scale is interpreted as V. A 1V peak sine corresponds to
+    // 10mW, or 10 dBm. The factor of 2 converts Vpeak to Vrms.
+    else if (m_PlotScale == PLOT_SCALE_DBMW50)
+        _pwr_scale *= 1000.0 / (2.0 * 50.0);
+
+    // For units of /Hz, rescale by 1/RBW. For V, this results in /sqrt(Hz), and is
+    // used for noise spectral density.
+    if (m_PlotPerHz && m_PlotScale != PLOT_SCALE_DBFS)
+        _pwr_scale *= (float)size / (float)m_SampleFreq;
+
     const float pwr_scale = _pwr_scale;
     for (int i = 0; i < size; ++i)
         m_fftData[i] = std::max(fftData[i] * pwr_scale, fmin);

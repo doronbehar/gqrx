@@ -739,9 +739,9 @@ void receiver::set_iq_fft_size(int newsize)
     iq_fft->set_fft_size(newsize);
 }
 
-void receiver::set_iq_fft_window(int window_type)
+void receiver::set_iq_fft_window(int window_type, bool normalize_energy)
 {
-    iq_fft->set_window_type(window_type);
+    iq_fft->set_window_type(window_type, normalize_energy);
 }
 
 /** Get latest baseband FFT data. */

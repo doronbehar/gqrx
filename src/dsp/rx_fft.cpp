@@ -30,23 +30,27 @@
 #include <algorithm>
 
 
-rx_fft_c_sptr make_rx_fft_c (unsigned int fftsize, double quad_rate, int wintype)
+rx_fft_c_sptr make_rx_fft_c (unsigned int fftsize, double quad_rate,
+                             int wintype, bool normalize_energy)
 {
-    return gnuradio::get_initial_sptr(new rx_fft_c (fftsize, quad_rate, wintype));
+    return gnuradio::get_initial_sptr(new rx_fft_c (fftsize, quad_rate,
+                                                   wintype, normalize_energy));
 }
 
 /*! \brief Create receiver FFT object.
  *  \param fftsize The FFT size.
  *  \param wintype The window type (see gr::fft::window::win_type).
+ *  \param normalize_energy Normalize window for energy instead of amplitude.
  *
  */
-rx_fft_c::rx_fft_c(unsigned int fftsize, double quad_rate, int wintype)
+rx_fft_c::rx_fft_c(unsigned int fftsize, double quad_rate, int wintype, bool normalize_energy)
     : gr::sync_block ("rx_fft_c",
           gr::io_signature::make(1, 1, sizeof(gr_complex)),
           gr::io_signature::make(0, 0, 0)),
       d_fftsize(fftsize),
       d_quadrate(quad_rate),
-      d_wintype(-1)
+      d_wintype(-1),
+      d_normalize_energy(false)
 {
 
     /* create FFT object */
@@ -68,7 +72,7 @@ rx_fft_c::rx_fft_c(unsigned int fftsize, double quad_rate, int wintype)
     d_writer->update_write_pointer(MAX_FFT_SIZE);
 
     /* create FFT window */
-    set_window_type(wintype);
+    set_window_type(wintype, normalize_energy);
 
     d_lasttime = std::chrono::steady_clock::now();
 }
@@ -166,7 +170,7 @@ void rx_fft_c::set_params()
     /* reset window */
     int wintype = d_wintype; // FIXME: would be nicer with a window_reset()
     d_wintype = -1;
-    set_window_type(wintype);
+    set_window_type(wintype, d_normalize_energy);
 
     /* reset FFT object (also reset FFTW plan) */
     delete d_fft;
@@ -204,16 +208,12 @@ unsigned int rx_fft_c::get_fft_size() const
 }
 
 /*! \brief Set new window type. */
-void rx_fft_c::set_window_type(int wintype)
+void rx_fft_c::set_window_type(int wintype, bool normalize_energy)
 {
-    float tmp;
-    // if (wintype == d_wintype)
-    // {
-    //     /* nothing to do */
-    //     return;
-    // }
+    float factor;
 
     d_wintype = wintype;
+    d_normalize_energy = normalize_energy;
 
     if ((d_wintype < gr::fft::window::WIN_HAMMING) || (d_wintype > gr::fft::window::WIN_FLATTOP))
     {
@@ -223,8 +223,15 @@ void rx_fft_c::set_window_type(int wintype)
     d_window.clear();
     d_window = gr::fft::window::build((gr::fft::window::win_type)d_wintype, d_fftsize, 6.76);
     d_window.resize(d_fftsize);
-    volk_32f_accumulator_s32f(&tmp, d_window.data(), d_fftsize);
-    volk_32f_s32f_normalize(d_window.data(), tmp / float(d_fftsize), d_fftsize);
+
+    // Normalize using average of window for amplitude, or RMS for energy
+    float sum = 0.0;
+    for (auto v : d_window)
+        sum += d_normalize_energy ? v * v : v;
+    factor = sum / (float)d_fftsize;
+    if (d_normalize_energy)
+        factor = std::sqrt(factor);
+    volk_32f_s32f_normalize(d_window.data(), factor, d_fftsize);
 }
 
 /*! \brief Get currently used window type. */
@@ -236,23 +243,28 @@ int rx_fft_c::get_window_type() const
 
 /**   rx_fft_f     **/
 
-rx_fft_f_sptr make_rx_fft_f(unsigned int fftsize, double audio_rate, int wintype)
+rx_fft_f_sptr make_rx_fft_f(unsigned int fftsize, double audio_rate,
+                            int wintype, bool normalize_energy)
 {
-    return gnuradio::get_initial_sptr(new rx_fft_f (fftsize, audio_rate, wintype));
+    return gnuradio::get_initial_sptr(new rx_fft_f (fftsize, audio_rate,
+                                                    wintype, normalize_energy));
 }
 
 /*! \brief Create receiver FFT object.
  *  \param fftsize The FFT size.
  *  \param wintype The window type (see gr::fft::window::win_type).
+ *  \param normalize_energy Normalize window for energy instead of amplitude.
  *
  */
-rx_fft_f::rx_fft_f(unsigned int fftsize, double audio_rate, int wintype)
+rx_fft_f::rx_fft_f(unsigned int fftsize, double audio_rate,
+                   int wintype, bool normalize_energy)
     : gr::sync_block ("rx_fft_f",
           gr::io_signature::make(1, 1, sizeof(float)),
           gr::io_signature::make(0, 0, 0)),
       d_fftsize(fftsize),
       d_audiorate(audio_rate),
-      d_wintype(-1)
+      d_wintype(-1),
+      d_normalize_energy(false)
 {
 
     /* create FFT object */
@@ -274,7 +286,7 @@ rx_fft_f::rx_fft_f(unsigned int fftsize, double audio_rate, int wintype)
     d_writer->update_write_pointer(d_fftsize);
 
     /* create FFT window */
-    set_window_type(wintype);
+    set_window_type(wintype, d_normalize_energy);
 
     d_lasttime = std::chrono::steady_clock::now();
 }
@@ -379,7 +391,7 @@ void rx_fft_f::set_fft_size(unsigned int fftsize)
         /* reset window */
         int wintype = d_wintype; // FIXME: would be nicer with a window_reset()
         d_wintype = -1;
-        set_window_type(wintype);
+        set_window_type(wintype, d_normalize_energy);
 
         /* reset FFT object (also reset FFTW plan) */
         delete d_fft;
@@ -398,9 +410,9 @@ unsigned int rx_fft_f::get_fft_size() const
 }
 
 /*! \brief Set new window type. */
-void rx_fft_f::set_window_type(int wintype)
+void rx_fft_f::set_window_type(int wintype, bool normalize_energy)
 {
-    float tmp;
+    float factor;
     if (wintype == d_wintype)
     {
         /* nothing to do */
@@ -408,6 +420,7 @@ void rx_fft_f::set_window_type(int wintype)
     }
 
     d_wintype = wintype;
+    d_normalize_energy = normalize_energy;
 
     if ((d_wintype < gr::fft::window::WIN_HAMMING) || (d_wintype > gr::fft::window::WIN_FLATTOP))
     {
@@ -416,8 +429,15 @@ void rx_fft_f::set_window_type(int wintype)
 
     d_window.clear();
     d_window = gr::fft::window::build((gr::fft::window::win_type)d_wintype, d_fftsize, 6.76);
-    volk_32f_accumulator_s32f(&tmp, d_window.data(), d_fftsize);
-    volk_32f_s32f_normalize(d_window.data(), tmp / float(d_fftsize), d_fftsize);
+
+    // Normalize using average of window for amplitude, or RMS for energy
+    float sum = 0.0;
+    for (auto v : d_window)
+        sum += d_normalize_energy ? v * v : v;
+    factor = sum / (float)d_fftsize;
+    if (d_normalize_energy)
+        factor = std::sqrt(factor);
+    volk_32f_s32f_normalize(d_window.data(), factor, d_fftsize);
 }
 
 /*! \brief Get currently used window type. */

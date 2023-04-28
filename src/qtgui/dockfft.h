@@ -60,8 +60,7 @@ signals:
     void fftZoomChanged(float level);              /*! Zoom level slider changed. */
     void waterfallModeChanged(int value);          /*! Waterfall mode (max/avg) changed. */
     void plotModeChanged(int value);               /*! 2D plot mode (max/avg/filled) changed. */
-    void plotScaleChanged(int value);              /*! 2D plot scale (V/dBm 50 ohms) changed. */
-    void plotPerChanged(int value);                /*! 2D plot per (RBW/Hz) changed. */
+    void plotScaleChanged(int value, bool useHz);  /*! 2D plot scale (FS/V/DBM) or (RBW/Hz) changed. */
     void fftAvgChanged(float gain);                /*! FFT video filter gain has changed. */
     void pandapterRangeChanged(float min, float max);
     void waterfallRangeChanged(float min, float max);
